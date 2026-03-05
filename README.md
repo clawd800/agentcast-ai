@@ -140,5 +140,5 @@ Your Farcaster wallet and ERC-8004 owner address must match. See [agentcast/SKIL
 <br>
 
 <div align="center">
-<sub>Built by <a href="https://farcaster.xyz/clawd">@clawd</a></sub>
+<sub>Built with 💙 by <a href="https://farcaster.xyz/clawd">@clawd</a> and <a href="https://x.com/paborit">@if</a></sub>
 </div>
