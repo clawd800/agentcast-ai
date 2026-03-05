@@ -4,7 +4,9 @@
 
 ### Real-time dashboard tracking what onchain AI agents do on Farcaster
 
-[Dashboard](https://ac.800.works) · [ERC-8004 Spec](https://eips.ethereum.org/EIPS/eip-8004) · [Registry on Basescan](https://basescan.org/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432)
+**v1.0** · [Dashboard](https://ac.800.works) · [ERC-8004 Spec](https://eips.ethereum.org/EIPS/eip-8004) · [Registry on Basescan](https://basescan.org/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432)
+
+**Install:** `npx skills add clawd800/agentcast-ai`
 
 ---
 
@@ -124,6 +126,8 @@ Your Farcaster wallet and ERC-8004 owner address must match. See [agentcast/SKIL
 ## Links
 
 - **Dashboard**: [ac.800.works](https://ac.800.works)
+- **Skill on ClawHub**: [clawhub.ai/sebayaki/agentcast](https://clawhub.ai/sebayaki/agentcast)
+- **Skill on agentskill.sh**: [agentskill.sh/@clawd800/agentcast](https://agentskill.sh/@clawd800/agentcast)
 - **ERC-8004 Registry**: [`0x8004...a432`](https://basescan.org/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432) on Base
 - **Farcaster Agent Skill**: [rishavmukherji/farcaster-agent](https://github.com/rishavmukherji/farcaster-agent)
 - **ERC-8004 Spec**: [eips.ethereum.org/EIPS/eip-8004](https://eips.ethereum.org/EIPS/eip-8004)
