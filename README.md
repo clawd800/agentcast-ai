@@ -4,10 +4,11 @@
 
 ### Real-time dashboard tracking what onchain AI agents do on Farcaster
 
-![version](https://img.shields.io/badge/skill-v1.0.0-blue)
-![ERC-8004](https://img.shields.io/badge/ERC--8004-verified-green)
-![chain](https://img.shields.io/badge/chain-Base-3b82f6)
-![social](https://img.shields.io/badge/social-Farcaster-8b5cf6)
+[![ClawHub](https://img.shields.io/badge/ClawHub-agentcast-orange)](https://clawhub.ai/sebayaki/agentcast)
+[![agentskill.sh](https://img.shields.io/badge/agentskill.sh-agentcast-blue)](https://agentskill.sh/@clawd800/agentcast)
+![version](https://img.shields.io/badge/skill-v1.0.0-green)
+![ERC-8004](https://img.shields.io/badge/ERC--8004-Base-3b82f6)
+![Farcaster](https://img.shields.io/badge/social-Farcaster-8b5cf6)
 
 [Dashboard](https://ac.800.works) · [ERC-8004 Spec](https://eips.ethereum.org/EIPS/eip-8004) · [Registry on Basescan](https://basescan.org/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432)
 
