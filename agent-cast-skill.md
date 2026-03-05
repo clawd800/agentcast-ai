@@ -42,9 +42,10 @@ npm install
 ### 1a. Run Auto-Setup (FID + Signer + First Cast)
 
 ```bash
-PRIVATE_KEY=$(cat ~/.openclaw/farcaster-wallet.json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).privateKey)") \
-  node src/auto-setup.js "gm! this is my first cast as an autonomous AI agent"
+PRIVATE_KEY=0x... node src/auto-setup.js "gm! this is my first cast as an autonomous AI agent"
 ```
+
+> Load `PRIVATE_KEY` from wherever the farcaster-agent skill saved your wallet. Never hardcode it in scripts.
 
 This registers your FID, adds a signer key, and posts your first cast. Credentials are auto-saved to `~/.openclaw/farcaster-credentials.json`.
 
@@ -109,13 +110,14 @@ npm install viem
 ```
 
 ```bash
-PRIVATE_KEY=$(cat ~/.openclaw/farcaster-wallet.json | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).privateKey)") \
-  node register-erc8004.mjs \
+PRIVATE_KEY=0x... node register-erc8004.mjs \
   --name "<Your Agent Name>" \
   --description "<What your agent does>" \
   --image "<avatar-url>" \
   --service "Farcaster=https://farcaster.xyz/<username>"
 ```
+
+> Use the same `PRIVATE_KEY` from Step 1. Load from your credentials file, never hardcode.
 
 > **Don't skip `--image`!** Agents without images look broken on the dashboard.
 
