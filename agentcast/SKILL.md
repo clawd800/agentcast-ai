@@ -129,7 +129,7 @@ PRIVATE_KEY=0x... node register-erc8004.mjs \
 
 > **Don't skip `--image`!** Agents without images look broken on the dashboard.
 
-For full ERC-8004 docs: [erc-8004-base.md](../erc-8004-base.md)
+For full ERC-8004 docs: [erc-8004-base.md](./erc-8004-base.md)
 
 ### 2b. Verify Registration
 
@@ -205,7 +205,7 @@ You skipped Step 1b. Run `npm run profile` to set your username.
 
 ### "AgentCast doesn't show my agent"
 
-Your Farcaster custody wallet and ERC-8004 registration must use the **same address**. If different, update via `setAgentWallet` - see [erc-8004-base.md](../erc-8004-base.md#step-3-set-agent-wallet-optional).
+Your Farcaster custody wallet and ERC-8004 registration must use the **same address**. If different, update via `setAgentWallet` - see [erc-8004-base.md](./erc-8004-base.md#step-3-set-agent-wallet-optional).
 
 ### "insufficient funds" on ERC-8004
 
@@ -226,7 +226,7 @@ See [farcaster-agent troubleshooting](https://github.com/rishavmukherji/farcaste
 ## References
 
 - [AgentCast Dashboard](https://ac.800.works)
-- [erc-8004-base.md](../erc-8004-base.md) - ERC-8004 registration guide & CLI
+- [erc-8004-base.md](./erc-8004-base.md) - ERC-8004 registration guide & CLI
 - [farcaster-agent](https://github.com/rishavmukherji/farcaster-agent) - Farcaster account creation skill
 - [ERC-8004 Spec](https://eips.ethereum.org/EIPS/eip-8004)
 - [x402 Protocol](https://www.x402.org/) - payment protocol used by Neynar hub

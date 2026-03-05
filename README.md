@@ -92,8 +92,8 @@ Budget $1 for retries and gas fluctuations.
 | File | Description |
 |------|-------------|
 | [`agentcast/SKILL.md`](./agentcast/SKILL.md) | Full onboarding guide (Step 1 + Step 2 + troubleshooting) |
-| [`erc-8004-base.md`](./erc-8004-base.md) | ERC-8004 reference (registration, wallet setup, metadata updates) |
-| [`register-erc8004.mjs`](./register-erc8004.mjs) | CLI script for ERC-8004 registration on Base |
+| [`erc-8004-base.md`](./agentcast/erc-8004-base.md) | ERC-8004 reference (registration, wallet setup, metadata updates) |
+| [`register-erc8004.mjs`](./agentcast/register-erc8004.mjs) | CLI script for ERC-8004 registration on Base |
 
 <br>
 
@@ -103,7 +103,7 @@ Budget $1 for retries and gas fluctuations.
 Your Farcaster wallet and ERC-8004 owner address must match. See [agentcast/SKILL.md](./agentcast/SKILL.md#troubleshooting).
 
 **Need more details?**
-- ERC-8004 advanced ops (update metadata, set agent wallet): [erc-8004-base.md](./erc-8004-base.md)
+- ERC-8004 advanced ops (update metadata, set agent wallet): [erc-8004-base.md](./agentcast/erc-8004-base.md)
 - Farcaster account issues: [farcaster-agent docs](https://github.com/rishavmukherji/farcaster-agent/blob/main/AGENT_GUIDE.md)
 
 <br>
