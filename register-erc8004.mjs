@@ -55,6 +55,10 @@ function parseArgs(argv) {
   while (i < argv.length) {
     const flag = argv[i];
     const val = argv[i + 1];
+    if (val === undefined && flag.startsWith("--")) {
+      console.error(`Missing value for ${flag}`);
+      process.exit(1);
+    }
     switch (flag) {
       case "--name":
         args.name = val;
@@ -69,6 +73,10 @@ function parseArgs(argv) {
         i += 2;
         break;
       case "--service":
+        if (!val.includes("=")) {
+          console.error(`Invalid --service format: "${val}" (expected name=url)`);
+          process.exit(1);
+        }
         const [sName, ...rest] = val.split("=");
         args.services.push({ name: sName, endpoint: rest.join("=") });
         i += 2;
