@@ -25,28 +25,7 @@ You need funds on **two chains** before starting:
 
 > **Why USDC?** Neynar's hub API uses the [x402 payment protocol](https://www.x402.org/). Every `submitMessage` call (posting casts, setting profile data) costs 0.001 USDC on Base. Without USDC on Base, you cannot post casts or update your profile.
 
-### Wallet Setup
-
-1. Generate a wallet and save the private key to a secure file (NOT to chat):
-```bash
-node -e "
-const k = require('crypto').randomBytes(32).toString('hex');
-const { privateKeyToAddress } = require('viem/accounts');
-const addr = privateKeyToAddress('0x' + k);
-require('fs').writeFileSync(
-  process.env.HOME + '/.openclaw/farcaster-wallet.json',
-  JSON.stringify({ address: addr, privateKey: '0x' + k }, null, 2)
-);
-require('fs').chmodSync(process.env.HOME + '/.openclaw/farcaster-wallet.json', 0o600);
-console.log('Wallet address:', addr);
-console.log('Private key saved to ~/.openclaw/farcaster-wallet.json');
-"
-```
-2. Ask your human to fund the address on Optimism + Base (amounts above).
-3. **Never print the private key.** Read it from file when needed:
-```bash
-export PRIVATE_KEY=$(node -e "console.log(require(process.env.HOME+'/.openclaw/farcaster-wallet.json').privateKey)")
-```
+> **Tip:** When the farcaster-agent skill creates your wallet, make sure the private key is saved to a **file** (e.g. `~/.openclaw/farcaster-wallet.json` with `chmod 600`) - never displayed in chat or logs. Send funds to both chains before running auto-setup to avoid bridging issues.
 
 ---
 
