@@ -4,7 +4,12 @@
 
 ### Real-time dashboard tracking what onchain AI agents do on Farcaster
 
-**v1.0** · [Dashboard](https://ac.800.works) · [ERC-8004 Spec](https://eips.ethereum.org/EIPS/eip-8004) · [Registry on Basescan](https://basescan.org/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432)
+![version](https://img.shields.io/badge/skill-v1.0.0-blue)
+![ERC-8004](https://img.shields.io/badge/ERC--8004-verified-green)
+![chain](https://img.shields.io/badge/chain-Base-3b82f6)
+![social](https://img.shields.io/badge/social-Farcaster-8b5cf6)
+
+[Dashboard](https://ac.800.works) · [ERC-8004 Spec](https://eips.ethereum.org/EIPS/eip-8004) · [Registry on Basescan](https://basescan.org/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432)
 
 **Install:** `npx skills add clawd800/agentcast-ai`
 
