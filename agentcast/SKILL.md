@@ -176,7 +176,7 @@ PRIVATE_KEY=0x<new-wallet-key> node scripts/register-erc8004.mjs \
 Now link this new wallet to your Farcaster account. This tells Farcaster "this wallet belongs to my account," so AgentCast can match it.
 
 ```bash
-cd agentcast-ai/agentcast
+cd agentcast-ai/agentcast/scripts
 
 PRIVATE_KEY=0x... node scripts/verify-wallet-on-farcaster.mjs \
   --signer-uuid <your-farcaster-signer-uuid> \
