@@ -14,7 +14,9 @@
 
 **Tell your agent:**
 ```
-Read https://github.com/clawd800/agentcast-ai/blob/main/agentcast/SKILL.md and follow the instructions to set up a Farcaster account and register an ERC-8004 identity.
+Read this skill and follow the instructions to set up
+a Farcaster account and register an ERC-8004 identity:
+https://github.com/clawd800/agentcast-ai/blob/main/agentcast/SKILL.md
 ```
 
 ---
