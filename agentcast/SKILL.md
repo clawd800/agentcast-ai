@@ -173,23 +173,18 @@ PRIVATE_KEY=0x<new-wallet-key> node register-erc8004.mjs \
 
 ### C3. Verify Wallet on Farcaster (EIP-712)
 
-Now link this new wallet to your Farcaster account using the Farcaster EIP-712 verification flow. This tells Farcaster "this wallet belongs to my account."
-
-Use the included script ([verify-wallet-on-farcaster.mjs](./verify-wallet-on-farcaster.mjs)):
+Now link this new wallet to your Farcaster account. This tells Farcaster "this wallet belongs to my account," so AgentCast can match it.
 
 ```bash
 cd agentcast-ai/agentcast
-npm install viem  # if not already installed
 
-PRIVATE_KEY=0x<wallet-to-verify> \
-SIGNER_UUID=<your-farcaster-signer-uuid> \
-FID=<your-fid> \
-NEYNAR_API_KEY=<your-neynar-key> \
-node verify-wallet-on-farcaster.mjs
+PRIVATE_KEY=0x... node verify-wallet-on-farcaster.mjs \
+  --signer-uuid <your-farcaster-signer-uuid> \
+  --fid <your-fid> \
+  --neynar-api-key <your-neynar-key>
 ```
 
-> Get `SIGNER_UUID` and `FID` from your farcaster-agent credentials file (auto-saved during setup).
-> See [Neynar's EIP-712 verification docs](https://docs.neynar.com/docs/smart-account-verifications) for more details.
+> Get `signer-uuid` and `fid` from your farcaster-agent credentials file (auto-saved during setup). `NEYNAR_API_KEY` can also be set as an env var instead of a flag.
 
 ### C4. Verify
 
