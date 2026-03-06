@@ -8,22 +8,24 @@
  *
  * Usage:
  *   PRIVATE_KEY=0x... node verify-wallet-on-farcaster.mjs \
- *     --signer-uuid <uuid> --fid <fid> --neynar-api-key <key>
+ *     --signer-uuid <uuid> --fid <fid>
  *
  * Options:
  *   --signer-uuid     Farcaster signer UUID (required)
  *   --fid             Farcaster FID (required)
- *   --neynar-api-key  Neynar API key (required, or set NEYNAR_API_KEY env)
+ *   --neynar-api-key  Neynar API key (optional - uses AgentCast proxy by default)
  *   --rpc             Custom Optimism RPC URL (default: public)
  *
  * Environment:
  *   PRIVATE_KEY       Private key of the wallet to verify (required)
- *   NEYNAR_API_KEY    Neynar API key (alternative to --neynar-api-key flag)
+ *   NEYNAR_API_KEY    Neynar API key (optional - uses AgentCast proxy by default)
  */
 
 import { createPublicClient, http } from "viem";
 import { optimism } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
+
+const AGENTCAST_PROXY = "https://ac.800.works/api/neynar/verification";
 
 // ── Parse args ───────────────────────────────────────────────────────
 
@@ -80,13 +82,10 @@ if (!args.fid) {
   process.exit(1);
 }
 
+// ── Determine endpoint ───────────────────────────────────────────────
+
 const neynarApiKey = args.neynarApiKey || process.env.NEYNAR_API_KEY;
-if (!neynarApiKey) {
-  console.error(
-    "Error: --neynar-api-key or NEYNAR_API_KEY env var is required"
-  );
-  process.exit(1);
-}
+const useProxy = !neynarApiKey;
 
 // ── Verify ───────────────────────────────────────────────────────────
 
@@ -97,7 +96,8 @@ const rpcUrl = args.rpc || "https://mainnet.optimism.io";
 
 console.log(`\nVerifying wallet on Farcaster (EIP-712)...`);
 console.log(`Wallet:  ${account.address}`);
-console.log(`FID:     ${args.fid}\n`);
+console.log(`FID:     ${args.fid}`);
+console.log(`Via:     ${useProxy ? "AgentCast proxy" : "Neynar direct"}\n`);
 
 try {
   // 1. Get latest finalized Optimism block hash
@@ -137,25 +137,30 @@ try {
     },
   });
 
-  // 4. Submit to Neynar
-  const resp = await fetch(
-    "https://api.neynar.com/v2/farcaster/user/verification",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": neynarApiKey,
-      },
-      body: JSON.stringify({
-        signer_uuid: args.signerUuid,
-        address: account.address,
-        block_hash: blockHash,
-        eth_signature: signature,
-        verification_type: 1,
-        chain_id: 10, // Optimism
-      }),
-    }
-  );
+  // 4. Submit verification
+  const payload = {
+    signer_uuid: args.signerUuid,
+    address: account.address,
+    block_hash: blockHash,
+    eth_signature: signature,
+    verification_type: 1,
+    chain_id: 10, // Optimism
+  };
+
+  const url = useProxy
+    ? AGENTCAST_PROXY
+    : "https://api.neynar.com/v2/farcaster/user/verification";
+
+  const headers = { "Content-Type": "application/json" };
+  if (!useProxy) {
+    headers["x-api-key"] = neynarApiKey;
+  }
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
 
   const result = await resp.json();
   if (resp.ok) {
