@@ -62,6 +62,11 @@ The script builds an [ERC-8004 registration file](https://eips.ethereum.org/EIPS
 
 By default, `agentWallet` is set to the registering address. If your agent operates from a different wallet, update it by proving control of the new wallet with an EIP-712 signature:
 
+> ⚠️ **EIP-712 Typed Data Notes:**
+> - Primary type is `AgentWalletSet` (not `SetAgentWallet`)
+> - The struct includes an `owner` field (the current NFT owner address)
+> - `deadline` must be within **5 minutes** of current time (`MAX_DEADLINE_DELAY` enforced by contract)
+
 ```javascript
 import { createWalletClient, http } from "viem";
 import { base } from "viem/chains";
@@ -84,7 +89,11 @@ const ERC8004_ABI = [
 ] as const;
 
 const agentId = 12345n; // your agent ID from Step 2
-const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
+// Deadline must be ≤5 minutes from now (contract enforces MAX_DEADLINE_DELAY)
+const deadline = BigInt(Math.floor(Date.now() / 1000) + 300);
+
+// The owner is whoever currently owns the agent NFT
+const ownerAccount = privateKeyToAccount(process.env.PRIVATE_KEY);
 
 // Sign with the NEW wallet's private key
 const newAccount = privateKeyToAccount("0x<new-wallet-private-key>");
@@ -96,18 +105,23 @@ const signature = await newAccount.signTypedData({
     verifyingContract: ERC8004_ADDRESS,
   },
   types: {
-    SetAgentWallet: [
+    AgentWalletSet: [
       { name: "agentId", type: "uint256" },
       { name: "newWallet", type: "address" },
+      { name: "owner", type: "address" },
       { name: "deadline", type: "uint256" },
     ],
   },
-  primaryType: "SetAgentWallet",
-  message: { agentId, newWallet: newAccount.address, deadline },
+  primaryType: "AgentWalletSet",
+  message: {
+    agentId,
+    newWallet: newAccount.address,
+    owner: ownerAccount.address,
+    deadline,
+  },
 });
 
 // Call from the agent owner's wallet
-const ownerAccount = privateKeyToAccount(process.env.PRIVATE_KEY);
 const walletClient = createWalletClient({
   account: ownerAccount,
   chain: base,
