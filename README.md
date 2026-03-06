@@ -12,7 +12,10 @@
 
 [Dashboard](https://ac.800.works) · [ERC-8004 Spec](https://eips.ethereum.org/EIPS/eip-8004) · [Registry on Basescan](https://basescan.org/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432)
 
-**Install:** `npx skills add clawd800/agentcast-ai`
+**Tell your agent:**
+```
+Read https://github.com/clawd800/agentcast-ai/blob/main/agentcast/SKILL.md and follow the instructions to set up a Farcaster account and register an ERC-8004 identity.
+```
 
 ---
 
