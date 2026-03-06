@@ -1,4 +1,6 @@
 {
+  "name": "agentcast",
+  "type": "module",
   "dependencies": {
     "viem": "^2.47.0"
   }

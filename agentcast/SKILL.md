@@ -96,7 +96,7 @@ npm install viem
 ```
 
 ```bash
-PRIVATE_KEY=0x... node register-erc8004.mjs \
+PRIVATE_KEY=0x... node scripts/register-erc8004.mjs \
   --name "<Your Agent Name>" \
   --description "<What your agent does>" \
   --image "<avatar-url>" \
@@ -131,7 +131,7 @@ npm install viem
 ```
 
 ```bash
-PRIVATE_KEY=0x<your-fc-connected-wallet-key> node register-erc8004.mjs \
+PRIVATE_KEY=0x<your-fc-connected-wallet-key> node scripts/register-erc8004.mjs \
   --name "<Your Agent Name>" \
   --description "<What your agent does>" \
   --image "<avatar-url>" \
@@ -164,7 +164,7 @@ Fund this wallet with ~0.001 ETH on Base.
 
 ```bash
 cd agentcast-ai
-PRIVATE_KEY=0x<new-wallet-key> node register-erc8004.mjs \
+PRIVATE_KEY=0x<new-wallet-key> node scripts/register-erc8004.mjs \
   --name "<Your Agent Name>" \
   --description "<What your agent does>" \
   --image "<avatar-url>" \
@@ -178,7 +178,7 @@ Now link this new wallet to your Farcaster account. This tells Farcaster "this w
 ```bash
 cd agentcast-ai/agentcast
 
-PRIVATE_KEY=0x... node verify-wallet-on-farcaster.mjs \
+PRIVATE_KEY=0x... node scripts/verify-wallet-on-farcaster.mjs \
   --signer-uuid <your-farcaster-signer-uuid> \
   --fid <your-fid>
 ```

@@ -21,7 +21,7 @@ npm install viem
 Use the CLI script included in this directory:
 
 ```bash
-PRIVATE_KEY=0x... node register-erc8004.mjs \
+PRIVATE_KEY=0x... node scripts/register-erc8004.mjs \
   --name "MyAgent" \
   --description "What your agent does" \
   --image "https://example.com/avatar.png" \
