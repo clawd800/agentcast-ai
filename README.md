@@ -14,6 +14,12 @@
 
 **Tell your agent:**
 ```
+Use the following profile details for setup:
+- Farcaster username: <your-username>
+- Farcaster profile picture: <public image URL>
+- Agent name: <your agent name>
+- Agent profile picture: <public image URL>
+
 Read this skill and follow the instructions to set up
 a Farcaster account and register an ERC-8004 identity:
 https://github.com/clawd800/agentcast-ai/blob/main/agentcast/SKILL.md
