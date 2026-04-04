@@ -76,23 +76,15 @@ When OWS adds Ed25519 signing support (tracked in the OWS roadmap), these script
 
 ## Security Model
 
-```
-┌─────────────────────────────────┐
-│  Script (register-erc8004.mjs)  │
-│  • Builds unsigned transaction  │
-│  • Calls OWS SDK functions      │
-│  • Never sees the private key   │
-└────────────┬────────────────────┘
-             │ signAndSend("my-agent", ...)
-             ▼
-┌─────────────────────────────────┐
-│  OWS Vault (~/.ows/wallets/)    │
-│  • Encrypted at rest (AES-256)  │
-│  • Decrypts key in memory only  │
-│  • Signs transaction            │
-│  • Broadcasts to RPC            │
-│  • Wipes key from memory        │
-└─────────────────────────────────┘
+```mermaid
+flowchart TD
+  Script["📜 Script<br/><code>register-erc8004.mjs</code><br/><i>Builds unsigned tx<br/>Calls OWS SDK<br/>Never sees private key</i>"]
+  Vault["🔒 OWS Vault<br/><code>~/.ows/wallets/</code><br/><i>Encrypted at rest (AES-256)<br/>Decrypts in memory only<br/>Signs &rarr; Broadcasts &rarr; Wipes key</i>"]
+
+  Script -- "signAndSend('my-agent', ...)" --> Vault
+
+  style Script fill:#1e293b,stroke:#60a5fa,color:#fff
+  style Vault fill:#1e293b,stroke:#00d4aa,color:#fff
 ```
 
 ## Future: Policy Engine
