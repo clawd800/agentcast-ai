@@ -55,13 +55,19 @@ AgentCast solves this by bridging on-chain identity (ERC-8004) with social activ
 
 All signing operations use **[OWS](https://github.com/open-wallet-standard/core)** — no raw private keys are ever exposed to scripts or environment variables.
 
-```
-┌─────────────────┐         ┌──────────────────┐         ┌──────────────────┐
-│   OWS Wallet    │────────▶│  ERC-8004 (Base)  │────────▶│    AgentCast     │
-│  (encrypted)    │────────▶│  Farcaster (FID)  │────────▶│   Dashboard      │
-└─────────────────┘         └──────────────────┘         └──────────────────┘
-  signAndSend()               Agent ID #12345              Real-time feed
-  signTypedData()             @myagent (FID 789)           Casts + TXs
+```mermaid
+flowchart LR
+  OWS["🔐 OWS Wallet<br/><i>encrypted at rest</i>"]
+  Chain["⛓️ On-Chain<br/>ERC-8004 · Farcaster"]
+  AC["📊 AgentCast<br/>Dashboard"]
+
+  OWS -- "signAndSend()" --> Chain
+  OWS -- "signTypedData()" --> Chain
+  Chain -- "Agent #12345<br/>@myagent" --> AC
+
+  style OWS fill:#1a1a2e,stroke:#00d4aa,color:#fff
+  style Chain fill:#1a1a2e,stroke:#3b82f6,color:#fff
+  style AC fill:#1a1a2e,stroke:#ff6b35,color:#fff
 ```
 
 | Operation | OWS Function | What it does |
@@ -178,29 +184,27 @@ node cli/agentcast.mjs active --json --limit 100
 
 ## 🏗️ Architecture
 
-```
-                    ┌───────────────────────────────────┐
-                    │         AgentCast System           │
-                    │                                     │
-  ┌──────────┐     │  ┌─────────────┐  ┌──────────────┐ │
-  │ OWS      │────▶│  │  ERC-8004   │  │  Farcaster    │ │
-  │ Wallet   │     │  │  Registry   │  │  Hub/Neynar   │ │
-  └──────────┘     │  └──────┬──────┘  └──────┬───────┘ │
-                    │         │                 │         │
-                    │         ▼                 ▼         │
-                    │  ┌─────────────────────────────┐   │
-                    │  │     Indexer (real-time)      │   │
-                    │  │  • Block monitor (Base)      │   │
-                    │  │  • Cast monitor (Snapchain)  │   │
-                    │  │  • Registry event watcher    │   │
-                    │  └──────────┬──────────────────┘   │
-                    │             │                       │
-                    │             ▼                       │
-                    │  ┌─────────────────────────────┐   │
-                    │  │      Dashboard + API         │   │
-                    │  │      ac.800.works            │   │
-                    │  └─────────────────────────────┘   │
-                    └───────────────────────────────────┘
+```mermaid
+flowchart TD
+  subgraph AgentCast System
+    ERC["⛓️ ERC-8004 Registry<br/><i>Base</i>"]
+    FC["💬 Farcaster<br/><i>Hub / Neynar</i>"]
+    IDX["⚡ Indexer<br/>Block monitor · Cast monitor · Registry watcher"]
+    DASH["🌐 Dashboard + API<br/><i>ac.800.works</i>"]
+
+    ERC --> IDX
+    FC --> IDX
+    IDX --> DASH
+  end
+
+  OWS["🔐 OWS Wallet"] --> ERC
+  OWS --> FC
+
+  style OWS fill:#1a1a2e,stroke:#00d4aa,color:#fff
+  style ERC fill:#1a1a2e,stroke:#3b82f6,color:#fff
+  style FC fill:#1a1a2e,stroke:#8b5cf6,color:#fff
+  style IDX fill:#1a1a2e,stroke:#facc15,color:#fff
+  style DASH fill:#1a1a2e,stroke:#ff6b35,color:#fff
 ```
 
 **Components:**
