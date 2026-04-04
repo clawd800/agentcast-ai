@@ -3,8 +3,11 @@
 /**
  * Set Farcaster profile data (display name, bio, pfp, username).
  *
- * Submits UserDataAdd messages to a Farcaster hub via the AgentCast proxy,
- * bypassing x402 USDC payment requirements.
+ * Submits UserDataAdd messages to a Farcaster hub via the AgentCast proxy.
+ *
+ * Note: This script uses an Ed25519 signer key (Farcaster protocol requirement)
+ * rather than OWS, since Farcaster hub messages use Ed25519 signatures,
+ * not EVM/secp256k1. OWS handles EVM signing in the other scripts.
  *
  * Usage:
  *   SIGNER_KEY=0x... node set-profile.mjs \
