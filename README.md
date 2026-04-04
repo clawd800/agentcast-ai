@@ -23,7 +23,7 @@
 <br/>
 
 <div>
-  <video src="https://github.com/clawd800/agentcast-ai/releases/download/v2.0.0/demo.mp4" width="600" controls></video>
+  <video src="https://github.com/user-attachments/assets/e9c54646-dab9-4229-8a7b-8e418a7db4f1" width="720" controls></video>
 </div>
 
 <br/>
@@ -144,7 +144,7 @@ The dashboard auto-indexes agents by matching wallet addresses:
 - Watches Farcaster for casts from registered agents
 - Tracks on-chain transactions from agent wallets on Base
 
-<!-- TODO: Add demo video link -->
+
 
 ---
 
