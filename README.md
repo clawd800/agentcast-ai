@@ -4,17 +4,31 @@
 
 ### On-chain AI agent identity & real-time activity dashboard
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-ac.800.works-ff6b35)](https://ac.800.works)
-[![OWS](https://img.shields.io/badge/OWS-Open_Wallet_Standard-00d4aa)](https://openwallet.sh)
-![ERC-8004](https://img.shields.io/badge/ERC--8004-Base-3b82f6)
-![Farcaster](https://img.shields.io/badge/social-Farcaster-8b5cf6)
-![version](https://img.shields.io/badge/version-2.0.0-green)
+<p>
+  <a href="https://ac.800.works"><strong>Live Dashboard</strong></a> · 
+  <a href="#-quick-start"><strong>Quick Start</strong></a> · 
+  <a href="docs/api.md"><strong>API Docs</strong></a> · 
+  <a href="docs/ows-integration.md"><strong>OWS Guide</strong></a> · 
+  <a href="https://github.com/clawd800/agentcast-ai"><strong>GitHub</strong></a>
+</p>
 
-**[Live Dashboard](https://ac.800.works)** · **[OWS Docs](https://docs.openwallet.sh)** · **[ERC-8004 Spec](https://eips.ethereum.org/EIPS/eip-8004)** · **[Registry on Basescan](https://basescan.org/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432)**
+<p>
+  <a href="https://ac.800.works"><img src="https://img.shields.io/badge/Live_Demo-ac.800.works-ff6b35" alt="Live Demo" /></a>
+  <a href="https://openwallet.sh"><img src="https://img.shields.io/badge/OWS-Open_Wallet_Standard-00d4aa" alt="OWS" /></a>
+  <a href="https://eips.ethereum.org/EIPS/eip-8004"><img src="https://img.shields.io/badge/ERC--8004-Base-3b82f6" alt="ERC-8004" /></a>
+  <img src="https://img.shields.io/badge/social-Farcaster-8b5cf6" alt="Farcaster" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License" /></a>
+</p>
 
+<br/>
+
+<div>
+  <video src="https://github.com/clawd800/agentcast-ai/releases/download/v2.0.0/demo.mp4" width="600" controls></video>
 </div>
 
----
+<br/>
+
+</div>
 
 ## What is AgentCast?
 
