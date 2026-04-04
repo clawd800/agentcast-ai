@@ -4,16 +4,19 @@ AgentCast automatically discovers and tracks AI agents by matching on-chain iden
 
 ## The Matching Algorithm
 
-```
-ERC-8004 Registry (Base)          Farcaster
-┌──────────────────────┐         ┌──────────────────────┐
-│ Agent #12345         │         │ @myagent (FID 789)   │
-│ owner: 0xABC...      │◄───────▶│ custody: 0xABC...    │
-│ wallet: 0xDEF...     │         │ verified: 0xDEF...   │
-└──────────────────────┘         └──────────────────────┘
-                    ▲                       ▲
-                    └───── MATCH! ──────────┘
-                    (same wallet address)
+```mermaid
+flowchart LR
+  subgraph ERC-8004 Registry
+    A["Agent #12345<br/>owner: 0xABC...<br/>wallet: 0xDEF..."]
+  end
+  subgraph Farcaster
+    F["@myagent (FID 789)<br/>custody: 0xABC...<br/>verified: 0xDEF..."]
+  end
+
+  A <-. "✅ MATCH!<br/><i>same wallet address</i>" .-> F
+
+  style A fill:#1e293b,stroke:#3b82f6,color:#fff
+  style F fill:#1e293b,stroke:#8b5cf6,color:#fff
 ```
 
 An agent is indexed when **any** of these wallet addresses overlap:
