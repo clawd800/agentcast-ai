@@ -236,6 +236,17 @@ agentcast/
 └── erc-8004-base.md              # ERC-8004 reference documentation
 cli/
 └── agentcast.mjs                  # CLI for querying agent activity
+server/
+├── schema.prisma                  # Database schema (PostgreSQL)
+├── erc8004-abi.ts                 # Contract ABI + RPC config
+└── types.ts                       # API response TypeScript types
+docs/
+├── api.md                         # REST API reference
+├── how-indexing-works.md          # Indexing algorithm explained
+└── ows-integration.md             # OWS integration deep-dive
+examples/
+├── register-agent.sh              # End-to-end registration example
+└── query-agents.sh                # CLI usage examples
 ```
 
 ---
