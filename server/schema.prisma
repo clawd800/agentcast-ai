@@ -1,0 +1,91 @@
+// AgentCast Database Schema
+// PostgreSQL, managed via Prisma ORM
+//
+// This is the data model for the AgentCast indexer.
+// Included here for reference — the indexer itself is not open source.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// On-chain AI agent registered on ERC-8004 (Base)
+model Agent {
+  id            Int      @id           // ERC-8004 agent ID (token ID)
+  ownerAddress  String                 // NFT owner address
+  walletAddress String?                // Agent's operating wallet (if set via setAgentWallet)
+  name          String?                // From token URI metadata
+  description   String?                // From token URI metadata
+  imageUrl      String?                // Avatar URL from metadata
+  agentUri      String?                // Raw token URI (data: URI or IPFS)
+  active        Boolean  @default(true)
+  services      Json?                  // Service endpoints [{name, endpoint}]
+
+  fid              Int                 // Linked Farcaster FID
+  farcasterAccount FarcasterAccount @relation(fields: [fid], references: [fid])
+  transactions     Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([walletAddress])
+  @@index([fid])
+}
+
+/// Farcaster account linked to an on-chain agent
+model FarcasterAccount {
+  fid            Int      @id          // Farcaster ID
+  username       String
+  displayName    String?
+  pfpUrl         String?
+  bio            String?
+  followersCount Int?
+
+  agents    Agent[]
+  casts     Cast[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([followersCount])
+}
+
+/// Farcaster cast from a tracked agent
+model Cast {
+  hash      String   @id              // Cast hash (hex)
+  fid       Int                       // Author FID
+  text      String                    // Cast text content
+  createdAt DateTime                  // Farcaster timestamp
+  embeds    Json?                     // Embedded URLs and cast references
+
+  account FarcasterAccount @relation(fields: [fid], references: [fid])
+
+  @@index([fid])
+  @@index([createdAt])
+}
+
+/// On-chain transaction from an agent wallet (Base)
+model Transaction {
+  hash         String   @id           // Transaction hash
+  blockNumber  BigInt                  // Block number on Base
+  fromAddress  String                  // Sender (agent wallet)
+  toAddress    String?                 // Recipient (null = contract creation)
+  value        String                  // ETH value in wei
+  selector     String?                 // Function selector (first 4 bytes)
+  functionName String?                 // Decoded function name
+  contractName String?                 // Decoded contract name (via Basescan)
+  createdAt    DateTime               // Block timestamp
+
+  agentId Int?
+  agent   Agent? @relation(fields: [agentId], references: [id])
+
+  @@index([fromAddress])
+  @@index([toAddress])
+  @@index([toAddress, contractName])
+  @@index([toAddress, selector, functionName])
+  @@index([blockNumber])
+  @@index([createdAt])
+}
