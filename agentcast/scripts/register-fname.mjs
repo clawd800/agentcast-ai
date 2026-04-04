@@ -4,27 +4,30 @@
  * Register a Farcaster username (fname) on the Farcaster Name Registry,
  * then set it as UserData on the hub.
  *
- * Use this when:
- * - farcaster-agent's setupFullProfile failed because the fname was taken
- * - You want to register a different fname for an existing FID
- * - You have an FID but never registered an fname (username shows as !<FID>)
+ * Uses OWS (Open Wallet Standard) for EIP-712 signing.
+ * No raw private keys needed - OWS handles custody securely.
  *
  * Usage:
- *   PRIVATE_KEY=0x... SIGNER_KEY=0x... node register-fname.mjs \
+ *   node register-fname.mjs \
+ *     --wallet <ows-wallet-name> \
  *     --fid <fid> \
  *     --fname <username>
  *
  * Options:
+ *   --wallet     OWS wallet name or ID (required, for EIP-712 fname registration)
  *   --fid        Farcaster FID (required)
  *   --fname      Username to register (required, lowercase alphanumeric + hyphens, 1-16 chars)
  *   --hub-url    Hub endpoint for UserData message (default: AgentCast proxy)
+ *   --passphrase OWS wallet passphrase (or set OWS_PASSPHRASE env var)
  *
  * Environment:
- *   PRIVATE_KEY  Custody wallet private key (for EIP-712 fname registration)
  *   SIGNER_KEY   Ed25519 signer private key (for hub UserData message)
  */
 
-import { privateKeyToAccount } from "viem/accounts";
+import {
+  getWallet,
+  signTypedData,
+} from "@open-wallet-standard/core";
 import {
   makeUserDataAdd,
   NobleEd25519Signer,
@@ -35,21 +38,6 @@ import {
 
 const FNAME_REGISTRY = "https://fnames.farcaster.xyz";
 const AGENTCAST_HUB_PROXY = "https://ac.800.works/api/neynar/hub";
-
-const FNAME_DOMAIN = {
-  name: "Farcaster name verification",
-  version: "1",
-  chainId: 1,
-  verifyingContract: "0xe3Be01D99bAa8dB9905b33a3cA391238234B79D1",
-};
-
-const FNAME_TYPES = {
-  UserNameProof: [
-    { name: "name", type: "string" },
-    { name: "timestamp", type: "uint256" },
-    { name: "owner", type: "address" },
-  ],
-};
 
 // ── Parse args ───────────────────────────────────────────────────────
 
@@ -64,6 +52,10 @@ function parseArgs(argv) {
       process.exit(1);
     }
     switch (flag) {
+      case "--wallet":
+        args.wallet = val;
+        i += 2;
+        break;
       case "--fid":
         args.fid = Number(val);
         i += 2;
@@ -76,6 +68,10 @@ function parseArgs(argv) {
         args.hubUrl = val;
         i += 2;
         break;
+      case "--passphrase":
+        args.passphrase = val;
+        i += 2;
+        break;
       default:
         console.error(`Unknown flag: ${flag}`);
         process.exit(1);
@@ -86,11 +82,11 @@ function parseArgs(argv) {
 
 const args = parseArgs(process.argv);
 
-const privateKey = process.env.PRIVATE_KEY;
 const signerKey = process.env.SIGNER_KEY;
+const passphrase = args.passphrase || process.env.OWS_PASSPHRASE || undefined;
 
-if (!privateKey) {
-  console.error("Error: PRIVATE_KEY environment variable required (custody wallet private key)");
+if (!args.wallet) {
+  console.error("Error: --wallet is required (OWS wallet name or ID)");
   process.exit(1);
 }
 if (!signerKey) {
@@ -112,9 +108,27 @@ if (!/^[a-z0-9][a-z0-9-]{0,15}$/.test(args.fname)) {
   process.exit(1);
 }
 
+// ── Resolve wallet ───────────────────────────────────────────────────
+
+let walletInfo;
+try {
+  walletInfo = getWallet(args.wallet);
+} catch (err) {
+  console.error(`Error: Could not find OWS wallet "${args.wallet}": ${err.message}`);
+  process.exit(1);
+}
+
+const evmAccount = walletInfo.accounts.find((a) => a.chainId.startsWith("eip155:") || a.chainId === "evm");
+if (!evmAccount) {
+  console.error("Error: OWS wallet has no EVM account");
+  process.exit(1);
+}
+const walletAddress = evmAccount.address;
+
 // ── Step 1: Check availability ───────────────────────────────────────
 
-console.log(`\nRegistering fname "${args.fname}" for FID ${args.fid}...\n`);
+console.log(`\nRegistering fname "${args.fname}" for FID ${args.fid}...`);
+console.log(`Wallet: ${walletAddress} (OWS: ${walletInfo.name})\n`);
 
 const checkRes = await fetch(`${FNAME_REGISTRY}/transfers/current?name=${args.fname}`);
 if (checkRes.ok) {
@@ -129,25 +143,51 @@ if (checkRes.ok) {
     }
   }
 } else if (checkRes.status !== 404) {
-  // 404 = name available, anything else is unexpected
   console.warn(`⚠️  Could not check fname availability (HTTP ${checkRes.status}), proceeding anyway...`);
 }
 
-// ── Step 2: Register on fnames.farcaster.xyz ─────────────────────────
+// ── Step 2: Register on fnames.farcaster.xyz (EIP-712 via OWS) ──────
 
-const account = privateKeyToAccount(privateKey);
 const timestamp = Math.floor(Date.now() / 1000);
 
-const signature = await account.signTypedData({
-  domain: FNAME_DOMAIN,
-  types: FNAME_TYPES,
+const typedData = {
+  types: {
+    EIP712Domain: [
+      { name: "name", type: "string" },
+      { name: "version", type: "string" },
+      { name: "chainId", type: "uint256" },
+      { name: "verifyingContract", type: "address" },
+    ],
+    UserNameProof: [
+      { name: "name", type: "string" },
+      { name: "timestamp", type: "uint256" },
+      { name: "owner", type: "address" },
+    ],
+  },
   primaryType: "UserNameProof",
+  domain: {
+    name: "Farcaster name verification",
+    version: "1",
+    chainId: "1",
+    verifyingContract: "0xe3Be01D99bAa8dB9905b33a3cA391238234B79D1",
+  },
   message: {
     name: args.fname,
-    timestamp: BigInt(timestamp),
-    owner: account.address,
+    timestamp: String(timestamp),
+    owner: walletAddress,
   },
-});
+};
+
+const sigResult = signTypedData(
+  args.wallet,
+  "evm",
+  JSON.stringify(typedData),
+  passphrase
+);
+
+const signature = sigResult.signature.startsWith("0x")
+  ? sigResult.signature
+  : `0x${sigResult.signature}`;
 
 const regRes = await fetch(`${FNAME_REGISTRY}/transfers`, {
   method: "POST",
@@ -157,7 +197,7 @@ const regRes = await fetch(`${FNAME_REGISTRY}/transfers`, {
     from: 0,
     to: args.fid,
     fid: args.fid,
-    owner: account.address,
+    owner: walletAddress,
     timestamp,
     signature,
   }),

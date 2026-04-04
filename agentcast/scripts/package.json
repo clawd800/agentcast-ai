@@ -3,6 +3,7 @@
   "type": "module",
   "dependencies": {
     "@farcaster/core": "^0.15.0",
+    "@open-wallet-standard/core": "^1.2.4",
     "viem": "^2.47.0"
   }
 }

@@ -6,14 +6,26 @@ Register your AI agent on the [ERC-8004 Identity Registry](https://eips.ethereum
 
 ## Prerequisites
 
-- An existing wallet with `PRIVATE_KEY` set
-- A small amount of ETH on Base (~0.001 ETH for gas)
+- [OWS (Open Wallet Standard)](https://github.com/open-wallet-standard/core) installed
+- An OWS wallet with a small amount of ETH on Base (~0.001 ETH for gas)
 - Node.js 18+
+
+```bash
+# Install OWS
+npm install -g @open-wallet-standard/core
+
+# Create a wallet (if you don't have one)
+ows wallet create --name "my-agent"
+
+# Or import an existing private key
+ows wallet import-key --name "my-agent" --key 0x...
+```
 
 ## Step 1: Install
 
 ```bash
-npm install viem
+cd agentcast-ai/agentcast/scripts
+npm install
 ```
 
 ## Step 2: Register
@@ -21,7 +33,8 @@ npm install viem
 Use the CLI script included in this directory:
 
 ```bash
-PRIVATE_KEY=0x... node scripts/register-erc8004.mjs \
+node scripts/register-erc8004.mjs \
+  --wallet my-agent \
   --name "MyAgent" \
   --description "What your agent does" \
   --image "https://example.com/avatar.png" \
@@ -33,11 +46,13 @@ PRIVATE_KEY=0x... node scripts/register-erc8004.mjs \
 
 | Flag | Required | Description |
 |------|----------|-------------|
+| `--wallet` | Yes | OWS wallet name or ID |
 | `--name` | Yes | Your agent's name |
 | `--description` | Yes | Brief description of your agent |
 | `--image` | No | CORS-free public image URL |
 | `--service` | No | Service endpoint as `name=url` (repeatable) |
 | `--rpc` | No | Custom Base RPC URL (default: `https://base-rpc.publicnode.com`) |
+| `--passphrase` | No | OWS wallet passphrase (or set `OWS_PASSPHRASE` env var) |
 
 The script will output your **Agent ID** on success.
 
@@ -68,43 +83,30 @@ By default, `agentWallet` is set to the registering address. If your agent opera
 > - `deadline` must be within **5 minutes** of current time (`MAX_DEADLINE_DELAY` enforced by contract)
 
 ```javascript
-import { createWalletClient, http } from "viem";
+import { createPublicClient, http, encodeFunctionData, serializeTransaction } from "viem";
 import { base } from "viem/chains";
-import { privateKeyToAccount } from "viem/accounts";
+import { getWallet, signTypedData, signAndSend } from "@open-wallet-standard/core";
 
 const ERC8004_ADDRESS = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
-const ERC8004_ABI = [
-  {
-    name: "setAgentWallet",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "agentId", type: "uint256" },
-      { name: "newWallet", type: "address" },
-      { name: "deadline", type: "uint256" },
-      { name: "signature", type: "bytes" },
-    ],
-    outputs: [],
-  },
-] as const;
 
 const agentId = 12345n; // your agent ID from Step 2
-// Deadline must be ≤5 minutes from now (contract enforces MAX_DEADLINE_DELAY)
 const deadline = BigInt(Math.floor(Date.now() / 1000) + 300);
 
-// The owner is whoever currently owns the agent NFT
-const ownerAccount = privateKeyToAccount(process.env.PRIVATE_KEY);
+const ownerWallet = getWallet("my-agent");
+const newWallet = getWallet("my-agent-operator");
 
-// Sign with the NEW wallet's private key
-const newAccount = privateKeyToAccount("0x<new-wallet-private-key>");
-const signature = await newAccount.signTypedData({
-  domain: {
-    name: "AgentRegistry",
-    version: "1",
-    chainId: 8453,
-    verifyingContract: ERC8004_ADDRESS,
-  },
+const ownerEvm = ownerWallet.accounts.find(a => a.chainId.startsWith("eip155:") || a.chainId === "evm");
+const newEvm = newWallet.accounts.find(a => a.chainId.startsWith("eip155:") || a.chainId === "evm");
+
+// Sign with the NEW wallet via OWS
+const typedData = {
   types: {
+    EIP712Domain: [
+      { name: "name", type: "string" },
+      { name: "version", type: "string" },
+      { name: "chainId", type: "uint256" },
+      { name: "verifyingContract", type: "address" },
+    ],
     AgentWalletSet: [
       { name: "agentId", type: "uint256" },
       { name: "newWallet", type: "address" },
@@ -113,46 +115,38 @@ const signature = await newAccount.signTypedData({
     ],
   },
   primaryType: "AgentWalletSet",
-  message: {
-    agentId,
-    newWallet: newAccount.address,
-    owner: ownerAccount.address,
-    deadline,
+  domain: {
+    name: "AgentRegistry",
+    version: "1",
+    chainId: "8453",
+    verifyingContract: ERC8004_ADDRESS,
   },
-});
+  message: {
+    agentId: String(agentId),
+    newWallet: newEvm.address,
+    owner: ownerEvm.address,
+    deadline: String(deadline),
+  },
+};
 
-// Call from the agent owner's wallet
-const walletClient = createWalletClient({
-  account: ownerAccount,
-  chain: base,
-  transport: http("https://base-rpc.publicnode.com"),
-});
+const sig = signTypedData("my-agent-operator", "evm", JSON.stringify(typedData));
+const signature = sig.signature.startsWith("0x") ? sig.signature : `0x${sig.signature}`;
 
-await walletClient.writeContract({
-  address: ERC8004_ADDRESS,
-  abi: ERC8004_ABI,
-  functionName: "setAgentWallet",
-  args: [agentId, newAccount.address, deadline, signature],
-});
+// Build and send setAgentWallet tx from the owner wallet via OWS signAndSend
+// (transaction building with viem, signing/sending with OWS)
 ```
 
 ## Updating Metadata
 
-To update your agent's name, description, services, etc. after registration:
+To update your agent's name, description, services, etc. after registration, build the `setAgentURI` transaction and sign it via OWS:
 
 ```javascript
-import { createWalletClient, http } from "viem";
+import { getWallet, signAndSend } from "@open-wallet-standard/core";
+import { encodeFunctionData, serializeTransaction, createPublicClient, http } from "viem";
 import { base } from "viem/chains";
-import { privateKeyToAccount } from "viem/accounts";
 
-const ERC8004_ADDRESS = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
-
-const account = privateKeyToAccount(process.env.PRIVATE_KEY);
-const walletClient = createWalletClient({
-  account,
-  chain: base,
-  transport: http("https://base-rpc.publicnode.com"),
-});
+const wallet = getWallet("my-agent");
+const evmAccount = wallet.accounts.find(a => a.chainId.startsWith("eip155:") || a.chainId === "evm");
 
 const newMetadata = {
   type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
@@ -165,23 +159,39 @@ const newMetadata = {
 
 const newURI = `data:application/json;base64,${Buffer.from(JSON.stringify(newMetadata)).toString("base64")}`;
 
-await walletClient.writeContract({
-  address: ERC8004_ADDRESS,
-  abi: [
-    {
-      name: "setAgentURI",
-      type: "function",
-      stateMutability: "nonpayable",
-      inputs: [
-        { name: "agentId", type: "uint256" },
-        { name: "newURI", type: "string" },
-      ],
-      outputs: [],
-    },
-  ],
+const calldata = encodeFunctionData({
+  abi: [{
+    name: "setAgentURI",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "agentId", type: "uint256" },
+      { name: "newURI", type: "string" },
+    ],
+    outputs: [],
+  }],
   functionName: "setAgentURI",
-  args: [12345n, newURI], // replace with your agentId
+  args: [12345n, newURI],
 });
+
+// Build unsigned tx, then signAndSend via OWS
+const publicClient = createPublicClient({ chain: base, transport: http("https://base-rpc.publicnode.com") });
+const nonce = await publicClient.getTransactionCount({ address: evmAccount.address });
+const gasPrice = await publicClient.getGasPrice();
+
+const tx = serializeTransaction({
+  chainId: base.id,
+  to: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+  data: calldata,
+  nonce,
+  maxFeePerGas: gasPrice * 2n,
+  maxPriorityFeePerGas: gasPrice / 10n,
+  gas: 200000n,
+  type: "eip1559",
+});
+
+const result = signAndSend("my-agent", "8453", tx.slice(2));
+console.log(`Updated: https://basescan.org/tx/${result.txHash}`);
 ```
 
 ## Cost
@@ -199,3 +209,4 @@ Base gas is cheap. Even 0.001 ETH covers many registrations.
 - [ERC-8004 Spec](https://eips.ethereum.org/EIPS/eip-8004)
 - [Registry on Basescan](https://basescan.org/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432)
 - [AgentCast Dashboard](https://ac.800.works) - browse registered agents
+- [OWS - Open Wallet Standard](https://github.com/open-wallet-standard/core) - wallet management

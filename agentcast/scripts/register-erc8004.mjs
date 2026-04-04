@@ -3,28 +3,44 @@
 /**
  * Register an AI agent on the ERC-8004 Identity Registry (Base).
  *
+ * Uses OWS (Open Wallet Standard) for key management and signing.
+ * No raw private keys needed - OWS handles custody securely.
+ *
  * Usage:
- *   PRIVATE_KEY=0x... node register-erc8004.mjs --name "MyAgent" --description "What it does" --image "https://..." [--service "Farcaster=https://farcaster.xyz/username"]
+ *   node register-erc8004.mjs --wallet <ows-wallet-name> --name "MyAgent" --description "What it does" [--image "https://..."] [--service "Farcaster=https://farcaster.xyz/username"]
  *
  * Options:
+ *   --wallet       OWS wallet name or ID (required)
  *   --name         Agent name (required)
  *   --description  Agent description (required)
- *   --image        Public image URL for agent avatar (CORS-free public URL required)
+ *   --image        Public image URL for agent avatar
  *   --service      Service endpoint in "name=url" format (repeatable)
  *   --rpc          Custom RPC URL (default: https://base-rpc.publicnode.com)
+ *   --passphrase   OWS wallet passphrase (or set OWS_PASSPHRASE env var)
  *
- * Environment:
- *   PRIVATE_KEY    Wallet private key with ETH on Base (~0.001 ETH for gas)
+ * First-time setup:
+ *   # Install OWS
+ *   npm install @open-wallet-standard/core
+ *
+ *   # Create a wallet (if you don't have one)
+ *   npx ows wallet create --name "my-agent"
+ *
+ *   # Or import an existing private key into OWS
+ *   npx ows wallet import-key --name "my-agent" --key 0x...
  */
 
 import {
-  createWalletClient,
   createPublicClient,
   http,
   decodeEventLog,
+  encodeFunctionData,
+  serializeTransaction,
 } from "viem";
 import { base } from "viem/chains";
-import { privateKeyToAccount } from "viem/accounts";
+import {
+  getWallet,
+  signAndSend,
+} from "@open-wallet-standard/core";
 
 const ERC8004_ADDRESS = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
 
@@ -60,6 +76,10 @@ function parseArgs(argv) {
       process.exit(1);
     }
     switch (flag) {
+      case "--wallet":
+        args.wallet = val;
+        i += 2;
+        break;
       case "--name":
         args.name = val;
         i += 2;
@@ -85,6 +105,10 @@ function parseArgs(argv) {
         args.rpc = val;
         i += 2;
         break;
+      case "--passphrase":
+        args.passphrase = val;
+        i += 2;
+        break;
       default:
         console.error(`Unknown flag: ${flag}`);
         process.exit(1);
@@ -95,18 +119,39 @@ function parseArgs(argv) {
 
 const args = parseArgs(process.argv);
 
+if (!args.wallet) {
+  console.error("Error: --wallet is required (OWS wallet name or ID)");
+  console.error("  Create one: npx ows wallet create --name my-agent");
+  console.error("  Or import:  npx ows wallet import-key --name my-agent --key 0x...");
+  process.exit(1);
+}
+
 if (!args.name || !args.description) {
   console.error(
-    "Usage: PRIVATE_KEY=0x... node register-erc8004.mjs --name <name> --description <desc> [--image <url>] [--service name=url]"
+    "Usage: node register-erc8004.mjs --wallet <name> --name <name> --description <desc> [--image <url>] [--service name=url]"
   );
   process.exit(1);
 }
 
-const privateKey = process.env.PRIVATE_KEY;
-if (!privateKey) {
-  console.error("Error: PRIVATE_KEY environment variable is required");
+const passphrase = args.passphrase || process.env.OWS_PASSPHRASE || undefined;
+
+// ── Resolve wallet ───────────────────────────────────────────────────
+
+let walletInfo;
+try {
+  walletInfo = getWallet(args.wallet);
+} catch (err) {
+  console.error(`Error: Could not find OWS wallet "${args.wallet}": ${err.message}`);
+  console.error("  List wallets: npx ows wallet list");
   process.exit(1);
 }
+
+const evmAccount = walletInfo.accounts.find((a) => a.chainId.startsWith("eip155:") || a.chainId === "evm");
+if (!evmAccount) {
+  console.error("Error: OWS wallet has no EVM account");
+  process.exit(1);
+}
+const walletAddress = evmAccount.address;
 
 // ── Build metadata ───────────────────────────────────────────────────
 
@@ -124,15 +169,6 @@ const agentURI = `data:application/json;base64,${Buffer.from(JSON.stringify(meta
 // ── Register ─────────────────────────────────────────────────────────
 
 const rpcUrl = args.rpc || "https://base-rpc.publicnode.com";
-const account = privateKeyToAccount(
-  privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`
-);
-
-const walletClient = createWalletClient({
-  account,
-  chain: base,
-  transport: http(rpcUrl),
-});
 
 const publicClient = createPublicClient({
   chain: base,
@@ -140,16 +176,48 @@ const publicClient = createPublicClient({
 });
 
 console.log(`\nRegistering agent "${args.name}" on ERC-8004 (Base)...`);
-console.log(`Wallet: ${account.address}\n`);
+console.log(`Wallet: ${walletAddress} (OWS: ${walletInfo.name})\n`);
 
 try {
-  const hash = await walletClient.writeContract({
-    address: ERC8004_ADDRESS,
+  // Build the transaction
+  const calldata = encodeFunctionData({
     abi: ERC8004_ABI,
     functionName: "register",
     args: [agentURI],
   });
 
+  const nonce = await publicClient.getTransactionCount({ address: walletAddress });
+  const gasPrice = await publicClient.getGasPrice();
+  const gasEstimate = await publicClient.estimateGas({
+    account: walletAddress,
+    to: ERC8004_ADDRESS,
+    data: calldata,
+  });
+
+  // Serialize unsigned EIP-1559 transaction
+  const tx = serializeTransaction({
+    chainId: base.id,
+    to: ERC8004_ADDRESS,
+    data: calldata,
+    nonce,
+    maxFeePerGas: gasPrice * 2n,
+    maxPriorityFeePerGas: gasPrice / 10n,
+    gas: gasEstimate * 12n / 10n, // 20% buffer
+    type: "eip1559",
+  });
+
+  // Sign and send via OWS
+  const txHex = tx.startsWith("0x") ? tx.slice(2) : tx;
+  const result = signAndSend(
+    args.wallet,
+    "8453", // Base chain ID
+    txHex,
+    passphrase,
+    undefined,
+    rpcUrl
+  );
+
+  const hash = result.txHash.startsWith("0x") ? result.txHash : `0x${result.txHash}`;
   console.log(`Tx sent: ${hash}`);
   console.log("Waiting for confirmation...\n");
 

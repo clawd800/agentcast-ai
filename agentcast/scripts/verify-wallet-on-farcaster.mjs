@@ -6,24 +6,29 @@
  * Links an Ethereum wallet to a Farcaster account so AgentCast
  * can match it against the ERC-8004 registry.
  *
+ * Uses OWS (Open Wallet Standard) for EIP-712 signing.
+ * No raw private keys needed - OWS handles custody securely.
+ *
  * Usage:
- *   PRIVATE_KEY=0x... node verify-wallet-on-farcaster.mjs \
+ *   node verify-wallet-on-farcaster.mjs \
+ *     --wallet <ows-wallet-name> \
  *     --signer-uuid <uuid> --fid <fid>
  *
  * Options:
+ *   --wallet          OWS wallet name or ID (required)
  *   --signer-uuid     Farcaster signer UUID (required)
  *   --fid             Farcaster FID (required)
  *   --neynar-api-key  Neynar API key (optional - uses AgentCast proxy by default)
  *   --rpc             Custom Optimism RPC URL (default: public)
- *
- * Environment:
- *   PRIVATE_KEY       Private key of the wallet to verify (required)
- *   NEYNAR_API_KEY    Neynar API key (optional - uses AgentCast proxy by default)
+ *   --passphrase      OWS wallet passphrase (or set OWS_PASSPHRASE env var)
  */
 
 import { createPublicClient, http } from "viem";
 import { optimism } from "viem/chains";
-import { privateKeyToAccount } from "viem/accounts";
+import {
+  getWallet,
+  signTypedData,
+} from "@open-wallet-standard/core";
 
 const AGENTCAST_PROXY = "https://ac.800.works/api/neynar/verification";
 
@@ -40,6 +45,10 @@ function parseArgs(argv) {
       process.exit(1);
     }
     switch (flag) {
+      case "--wallet":
+        args.wallet = val;
+        i += 2;
+        break;
       case "--signer-uuid":
         args.signerUuid = val;
         i += 2;
@@ -56,6 +65,10 @@ function parseArgs(argv) {
         args.rpc = val;
         i += 2;
         break;
+      case "--passphrase":
+        args.passphrase = val;
+        i += 2;
+        break;
       default:
         console.error(`Unknown flag: ${flag}`);
         process.exit(1);
@@ -65,22 +78,37 @@ function parseArgs(argv) {
 }
 
 const args = parseArgs(process.argv);
+const passphrase = args.passphrase || process.env.OWS_PASSPHRASE || undefined;
 
-const privateKey = process.env.PRIVATE_KEY;
-if (!privateKey) {
-  console.error("Error: PRIVATE_KEY environment variable is required");
+if (!args.wallet) {
+  console.error("Error: --wallet is required (OWS wallet name or ID)");
   process.exit(1);
 }
-
 if (!args.signerUuid) {
   console.error("Error: --signer-uuid is required");
   process.exit(1);
 }
-
 if (!args.fid) {
   console.error("Error: --fid is required");
   process.exit(1);
 }
+
+// ── Resolve wallet ───────────────────────────────────────────────────
+
+let walletInfo;
+try {
+  walletInfo = getWallet(args.wallet);
+} catch (err) {
+  console.error(`Error: Could not find OWS wallet "${args.wallet}": ${err.message}`);
+  process.exit(1);
+}
+
+const evmAccount = walletInfo.accounts.find((a) => a.chainId.startsWith("eip155:") || a.chainId === "evm");
+if (!evmAccount) {
+  console.error("Error: OWS wallet has no EVM account");
+  process.exit(1);
+}
+const walletAddress = evmAccount.address;
 
 // ── Determine endpoint ───────────────────────────────────────────────
 
@@ -89,13 +117,10 @@ const useProxy = !neynarApiKey;
 
 // ── Verify ───────────────────────────────────────────────────────────
 
-const account = privateKeyToAccount(
-  privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`
-);
 const rpcUrl = args.rpc || "https://mainnet.optimism.io";
 
-console.log(`\nVerifying wallet on Farcaster (EIP-712)...`);
-console.log(`Wallet:  ${account.address}`);
+console.log(`\nVerifying wallet on Farcaster (EIP-712 via OWS)...`);
+console.log(`Wallet:  ${walletAddress} (OWS: ${walletInfo.name})`);
 console.log(`FID:     ${args.fid}`);
 console.log(`Via:     ${useProxy ? "AgentCast proxy" : "Neynar direct"}\n`);
 
@@ -108,39 +133,51 @@ try {
   const block = await client.getBlock({ blockTag: "finalized" });
   const blockHash = block.hash;
 
-  // 2. EIP-712 domain and types (Farcaster spec)
-  const domain = {
-    name: "Farcaster Verify Ethereum Address",
-    version: "2.0.0",
-    salt: "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558",
-  };
-
-  const types = {
-    VerificationClaim: [
-      { name: "fid", type: "uint256" },
-      { name: "address", type: "address" },
-      { name: "blockHash", type: "bytes32" },
-      { name: "network", type: "uint8" },
-    ],
-  };
-
-  // 3. Sign the verification claim
-  const signature = await account.signTypedData({
-    domain,
-    types,
-    primaryType: "VerificationClaim",
-    message: {
-      fid: BigInt(args.fid),
-      address: account.address,
-      blockHash,
-      network: 1, // Farcaster mainnet
+  // 2. EIP-712 typed data (Farcaster spec)
+  const typedData = {
+    types: {
+      EIP712Domain: [
+        { name: "name", type: "string" },
+        { name: "version", type: "string" },
+        { name: "salt", type: "bytes32" },
+      ],
+      VerificationClaim: [
+        { name: "fid", type: "uint256" },
+        { name: "address", type: "address" },
+        { name: "blockHash", type: "bytes32" },
+        { name: "network", type: "uint8" },
+      ],
     },
-  });
+    primaryType: "VerificationClaim",
+    domain: {
+      name: "Farcaster Verify Ethereum Address",
+      version: "2.0.0",
+      salt: "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558",
+    },
+    message: {
+      fid: String(args.fid),
+      address: walletAddress,
+      blockHash,
+      network: "1",
+    },
+  };
+
+  // 3. Sign via OWS
+  const sigResult = signTypedData(
+    args.wallet,
+    "evm",
+    JSON.stringify(typedData),
+    passphrase
+  );
+
+  const signature = sigResult.signature.startsWith("0x")
+    ? sigResult.signature
+    : `0x${sigResult.signature}`;
 
   // 4. Submit verification
   const payload = {
     signer_uuid: args.signerUuid,
-    address: account.address,
+    address: walletAddress,
     block_hash: blockHash,
     eth_signature: signature,
     verification_type: 1,
@@ -164,7 +201,7 @@ try {
 
   const result = await resp.json();
   if (resp.ok) {
-    console.log(`✅ Wallet verified on Farcaster: ${account.address}`);
+    console.log(`✅ Wallet verified on Farcaster: ${walletAddress}`);
     console.log(
       `   This wallet is now linked to FID ${args.fid} and will be matched by AgentCast.`
     );
