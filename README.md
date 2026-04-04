@@ -8,8 +8,7 @@
   <a href="https://ac.800.works"><strong>Live Dashboard</strong></a> · 
   <a href="#-quick-start"><strong>Quick Start</strong></a> · 
   <a href="docs/api.md"><strong>API Docs</strong></a> · 
-  <a href="docs/ows-integration.md"><strong>OWS Guide</strong></a> · 
-  <a href="https://github.com/clawd800/agentcast-ai"><strong>GitHub</strong></a>
+  <a href="docs/ows-integration.md"><strong>OWS Guide</strong></a>
 </p>
 
 <p>
